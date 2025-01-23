@@ -1,0 +1,79 @@
+/*----------------------------------------------------------------------------*/
+/* APPLICATION LAYER: Application Layer Documentation */
+/*----------------------------------------------------------------------------*/
+/**
+@defgroup  application-layer Application Layer
+@details 
+  Layer where Tasks are defined
+
+@defgroup application-layer-user-tasks-configuration Application Tasks Settings
+@ingroup application-layer
+@details 
+  Layer where Tasks are initialized
+
+@defgroup  task-layer Applications
+@ingroup application-layer
+@details 
+  Layer where Tasks functions and parameters are defined
+*/
+
+
+/*----------------------------------------------------------------------------*/
+/* ABSTRACTION LAYER: HW and SW Abstraction Layer Documentation */
+/*----------------------------------------------------------------------------*/
+/**
+@defgroup abstraction-layer Abstraction Layer 
+@details
+@brief Layer where all Hardware and Software abstraction layers are managed
+*/
+
+/*----------------------------------------------------------------------------*/
+/* HW ABSTRACTION LAYER: HW Abstraction Layer Documentation */
+/*----------------------------------------------------------------------------*/
+/**
+@defgroup hw-abstraction-layer Hardware Abstraction Layer
+@ingroup abstraction-layer
+@brief Hardware abstraction layer 
+
+@defgroup device-abstraction-pral Peripheral Abstraction Layer (PRAL)
+@ingroup hw-abstraction-layer
+@brief Hardware PRAL abstraction layer 
+*/
+
+/*----------------------------------------------------------------------------*/
+/* SW ABSTRACTION LAYER: SW Abstraction Layer Documentation */
+/*----------------------------------------------------------------------------*/
+/**
+@defgroup sw-abstraction-layer Software Abstraction Layer
+@ingroup abstraction-layer
+@brief Software abstraction layer
+
+@defgroup sw-abstraction-layer-settings Software Abstraction Settings & Macros
+@ingroup sw-abstraction-layer
+@brief Driver Library
+
+@defgroup lib-driver-layer Driver Library Layer
+@ingroup sw-abstraction-layer
+@brief Driver Library
+
+@defgroup lib-layer Software Library Layer
+@ingroup sw-abstraction-layer
+@brief Software Library
+*/
+
+
+/*----------------------------------------------------------------------------*/
+/* RTOS : Real-Time Operating System Documentation */
+/*----------------------------------------------------------------------------*/
+/**
+@defgroup rtos-layer RTOS 
+@details 
+  RTOS
+
+@defgroup app-rtos-layer RTOS Application Layer
+@ingroup rtos-layer
+@brief RTOS application layer
+*/
+
+
+

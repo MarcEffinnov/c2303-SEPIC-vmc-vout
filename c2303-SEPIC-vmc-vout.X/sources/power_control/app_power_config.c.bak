@@ -1,0 +1,715 @@
+/*
+ * File:   app_power_config.c
+ * Author: M91406
+ *
+ * Created on January 13, 2021, 12:18 PM
+ */
+
+
+#include <xc.h> // include processor files - each processor file is guarded.  
+#include <stdint.h> // include standard integer data types
+#include <stdbool.h> // include standard boolean data types
+#include <stddef.h> // include standard definition data types
+
+#include "config/mcal.h" // include microcontroller abstraction layer declarations
+#include "config/hal.h" // include hardware abstraction layer declarations
+#include "app_power_control.h"
+
+#include "devices/dev_4swbb_converter.h"
+#include "drivers/v_loop.h"
+#include "drivers/i_loop.h"
+
+/*******************************************************************************
+ * @ingroup app-layer-power-control-functions-private
+ * @fn	volatile uint16_t appPowerSupply_ConverterObjectInitialize(void)
+ * @brief  This function initializes the SEPIC converter device driver instance
+ * @return unsigned integer (0=failure, 1=success)
+ *  
+ * @details
+ *  This function initialize the SEPIC converter object status, reset the SEPIC state 
+ *  machine, set reference values, clear the runtime data, initialize the switch node,
+ *  and setup the feedback channels and start-up settings.
+ *********************************************************************************/
+
+volatile uint16_t appPowerSupply_ConverterObjectInitialize(void)
+{
+    volatile uint16_t retval = 1;
+    
+    // Initialize SEPIC Converter Object Status
+    c4swbb.status.bits.ready = false; // Clear READY flag
+    c4swbb.status.bits.adc_active = false; // Clear ADC STARTED flag
+    c4swbb.status.bits.pwm_active = false; // clear PWM STARTED flag
+    c4swbb.status.bits.fault_active = true; // Set global FAULT flag
+    
+    c4swbb.status.bits.cs_calib_enable = C4SWBB_ISNS_OFFSET_CALIBRATION_ENABLE; // Disable current sense feedback calibration
+    c4swbb.status.bits.autorun = true;    // Allow the SEPIC converter to start automatically when cleared of faults
+    c4swbb.status.bits.enabled = false; // Disable SEPIC converter
+ 
+    // Set Initial State Machine State
+    c4swbb.state_id.value = C4SWBB_OPSTATE_INITIALIZE; // Reset SEPIC State Machine
+    
+    // Set Reference values
+    c4swbb.set_values.control_mode = C4SWBB_CONTROL_MODE_ACMC; // Set Control Mode
+    //c4swbb.set_values.control_mode = C4SWBB_CONTROL_MODE_VMC; // Set Control Mode
+    c4swbb.set_values.no_of_phases = C4SWBB_NO_OF_PHASES; // Set number of power train phases
+    c4swbb.set_values.i_ref = C4SWBB_ISNS_OCL; // Set current loop maximum
+    c4swbb.set_values.v_ref = C4SWBB_VOUT_REF; // Set voltage loop reference
+    c4swbb.set_values.v_slew_rate = C4SWBB_VOUT_REF_SLEWRATE; // Set voltage transition slew rate applied during runtime reference tuning
+    c4swbb.set_values.i_slew_rate = C4SWBB_ISNS_REF_SLEWRATE; // Set current transition slew rate applied during runtime reference tuning
+    
+    // Clear Runtime Data
+    c4swbb.data.v_out = 0; // Reset output voltage value
+    c4swbb.data.i_sns[0] = 0; // Reset output current value
+    c4swbb.data.v_in = 0;  // Reset input voltage value
+    c4swbb.data.temp = 0;  // Reset output temperature value
+    
+
+    return(retval);
+    
+}
+
+/*******************************************************************************
+ * @ingroup app-layer-power-control-functions-private
+ * @fn	volatile uint16_t appPowerSupply_SwitchNodeInitialize(void)
+ * @brief  This function initializes the switch node of the buck converter device driver instance 
+ * @return unsigned integer (0=failure, 1=success)
+ *  
+ * @details
+ *  This function initializes the switch node of the buck converter object by 
+ *  assigning it to a specific PWM generator instance and setting the associated 
+ *  GPIO pins. Further, users need to specify basic parameters like commutation 
+ *  mode (synchronous or asynchronous drive), switching frequency, phase shift,
+ *  duty ratio clamping values, dead times, leading edge blanking and ADC 
+ *  trigger offsets to compensate propagation delays of FET drivers and feedback
+ *  bandwidth limitations.
+ *********************************************************************************/
+
+volatile uint16_t appPowerSupply_SwitchNodeInitialize(void)
+{
+    volatile uint16_t retval = 1;
+ 
+    // Initialize Switch Node
+    c4swbb.sw_node[0].period = C4SWBB_PWM_PERIOD;
+    c4swbb.sw_node[0].high_resolution_enable = PWM_CLOCK_HIGH_RESOLUTION;
+
+    c4swbb.sw_node[0].buck_leg.pwm_instance = C4SWBB_BUCK_PWM_CHANNEL;
+    c4swbb.sw_node[0].buck_leg.gpio_instance = C4SWBB_BUCK_PWM_GPIO_INSTANCE;
+    c4swbb.sw_node[0].buck_leg.gpio_high = C4SWBB_BUCK_PWM_GPIO_PORT_PINH;
+    c4swbb.sw_node[0].buck_leg.gpio_low = C4SWBB_BUCK_PWM_GPIO_PORT_PINL;
+    c4swbb.sw_node[0].buck_leg.swap_outputs = C4SWBB_BUCK_PWM_OUTPUT_SWAP;
+    c4swbb.sw_node[0].buck_leg.sync_drive = true; 
+    c4swbb.sw_node[0].buck_leg.phase = C4SWBB_BUCK_PWM_PHASE_SHIFT;
+    c4swbb.sw_node[0].buck_leg.duty_ratio_min = (C4SWBB_BUCK_PWM_DC_MIN + C4SWBB_BOOST_PWM_DEAD_TIME_FE);
+    c4swbb.sw_node[0].buck_leg.duty_ratio_init = C4SWBB_BUCK_PWM_DC_MIN;
+    c4swbb.sw_node[0].buck_leg.duty_ratio_max = C4SWBB_BUCK_PWM_DC_MAX;
+    c4swbb.sw_node[0].buck_leg.dead_time_rising = C4SWBB_BUCK_PWM_DEAD_TIME_LE;
+    c4swbb.sw_node[0].buck_leg.dead_time_falling = C4SWBB_BUCK_PWM_DEAD_TIME_FE;
+    c4swbb.sw_node[0].buck_leg.leb_period = C4SWBB_BUCK_LEB_PERIOD;
+    c4swbb.sw_node[0].buck_leg.trigger_offset = C4SWBB_BUCK_PWM_ADTR1OFS;
+    c4swbb.sw_node[0].buck_leg.trigger_scaler = C4SWBB_BUCK_PWM_ADTR1PS;
+
+    c4swbb.sw_node[0].boost_leg.pwm_instance = C4SWBB_BOOST_PWM_CHANNEL;
+    c4swbb.sw_node[0].boost_leg.gpio_instance = C4SWBB_BOOST_PWM_GPIO_INSTANCE;
+    c4swbb.sw_node[0].boost_leg.gpio_high = C4SWBB_BOOST_PWM_GPIO_PORT_PINH;
+    c4swbb.sw_node[0].boost_leg.gpio_low = C4SWBB_BOOST_PWM_GPIO_PORT_PINL;
+    c4swbb.sw_node[0].boost_leg.swap_outputs = C4SWBB_BOOST_PWM_OUTPUT_SWAP;
+    c4swbb.sw_node[0].boost_leg.sync_drive = true; 
+    c4swbb.sw_node[0].boost_leg.phase = 0;
+    c4swbb.sw_node[0].boost_leg.duty_ratio_min = (C4SWBB_BOOST_PWM_DC_MIN + C4SWBB_BOOST_PWM_DEAD_TIME_FE);
+    c4swbb.sw_node[0].boost_leg.duty_ratio_init = C4SWBB_BOOST_PWM_DC_MIN;
+    c4swbb.sw_node[0].boost_leg.duty_ratio_max = C4SWBB_BOOST_PWM_DC_MAX;
+    c4swbb.sw_node[0].boost_leg.dead_time_rising = C4SWBB_BOOST_PWM_DEAD_TIME_LE;
+    c4swbb.sw_node[0].boost_leg.dead_time_falling = C4SWBB_BOOST_PWM_DEAD_TIME_FE;
+    c4swbb.sw_node[0].boost_leg.leb_period = C4SWBB_BOOST_LEB_PERIOD;
+    c4swbb.sw_node[0].boost_leg.trigger_offset = C4SWBB_BOOST_PWM_ADTR1OFS;
+    c4swbb.sw_node[0].boost_leg.trigger_scaler = C4SWBB_BOOST_PWM_ADTR1PS;
+    
+    // Configure SEPIC converter PWM distribution module
+    c4swbb.sw_node[0].pwm_distribution.ptrBuckLeg = &C4SWBB_BUCK_PWM_PDC;
+    c4swbb.sw_node[0].pwm_distribution.MinLimitBuck = c4swbb.sw_node[0].buck_leg.duty_ratio_min;
+    c4swbb.sw_node[0].pwm_distribution.MaxLimitBuck = c4swbb.sw_node[0].buck_leg.duty_ratio_max;
+    
+    c4swbb.sw_node[0].pwm_distribution.ptrBoostLeg = &C4SWBB_BOOST_PWM_PDC;
+    c4swbb.sw_node[0].pwm_distribution.MinLimitBoost = c4swbb.sw_node[0].boost_leg.duty_ratio_min;
+    c4swbb.sw_node[0].pwm_distribution.MaxLimitBoost = c4swbb.sw_node[0].boost_leg.duty_ratio_max;
+    
+    c4swbb.sw_node[0].pwm_distribution.ptrBoostLegPhaseShiftReg = &C4SWBB_BUCK_PWM_PGxTRIGC;
+    c4swbb.sw_node[0].pwm_distribution.BoostLegPhaseShift = 0;
+    
+    c4swbb.sw_node[0].pwm_distribution.Status.bits.AdcTriggerAEnable = true;
+    c4swbb.sw_node[0].pwm_distribution.ptrAdcTriggerA = &C4SWBB_VOUT_ADCTRIG;
+    c4swbb.sw_node[0].pwm_distribution.OffsetAdcTriggerA = ((C4SWBB_PWM_PERIOD >> 1) + C4SWBB_VOUT_ADC_TRGDLY);
+
+    c4swbb.sw_node[0].pwm_distribution.Status.bits.AdcTriggerBEnable = true;
+    c4swbb.sw_node[0].pwm_distribution.ptrAdcTriggerB = &C4SWBB_ISNS_ADCTRIG;
+    c4swbb.sw_node[0].pwm_distribution.OffsetAdcTriggerB = C4SWBB_ISNS_ADC_TRGDLY;
+
+    c4swbb.sw_node[0].pwm_distribution.Status.bits.buck_async_mode = false;
+    c4swbb.sw_node[0].pwm_distribution.Status.bits.boost_async_mode = false;
+
+    return(retval);
+    
+}
+
+/*******************************************************************************
+ * @ingroup app-layer-power-control-functions-private
+ * @fn	volatile uint16_t appPowerSupply_GpioInitialize(void)
+ * @brief  This function initializes the IO functions of the buck converter device driver instance 
+ * @return unsigned integer (0=failure, 1=success)
+ *  
+ * @details
+ *  This function initializes the optional Input/Output functions of the buck
+ *  converter device driver instance used to provide external sequencing control,
+ *  such as ENABLE Input and Power Good Output. These optional features can be 
+ *  individually enabled and mapped to any available device GPIO.
+ *********************************************************************************/
+
+volatile uint16_t appPowerSupply_GpioInitialize(void)
+{
+    volatile uint16_t retval = 1;
+
+    // Initialize additional GPIOs 
+    
+    // ~~~ EXTERNAL ENABLE INPUT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    c4swbb.gpio.EnableInput.enabled = false; // this converter doesn't support external enable control
+    // ~~~ EXTERNAL ENABLE INPUT END ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    // ~~~ POWER GOOD OUTPUT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    c4swbb.gpio.PowerGood.enabled = false; // This converter supports an additional POWER GOOD output
+    // ~~~ POWER GOOD OUTPUT END ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    return(retval);
+    
+}
+
+/*******************************************************************************
+ * @ingroup app-layer-power-control-functions-private
+ * @fn	volatile uint16_t appPowerSupply_FeedbackInitialize(void)
+ * @brief  This function initializes the feedback channels of the buck converter device driver instance 
+ * @return unsigned integer (0=failure, 1=success)
+ *  
+ * @details
+ *  This function initializes the supported feedback channels of the buck
+ *  converter device driver instance used for system monitoring and control.
+ *  A buck converter instance supports the following standard feedback 
+ *  channels:
+ * 
+ * - Input Voltage:    (used for protection and advanced linearization control)
+ * - Output Voltage:   (used for output voltage control)
+ * - Inductor Current
+ * - Temperature
+ * 
+ *********************************************************************************/
+
+volatile uint16_t appPowerSupply_FeedbackInitialize(void)
+{
+    volatile uint16_t retval = 1;
+
+    // Initialize Feedback Channels
+    
+    // ~~~ OUTPUT VOLTAGE FEEDBACK ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    c4swbb.feedback.ad_vout.enabled = true;   // Use this channel
+
+    c4swbb.feedback.ad_vout.adc_input = C4SWBB_VOUT_ADCIN;
+    c4swbb.feedback.ad_vout.adc_core = C4SWBB_VOUT_ADCCORE;
+    c4swbb.feedback.ad_vout.adc_buffer = &C4SWBB_VOUT_ADCBUF;
+    c4swbb.feedback.ad_vout.trigger_source = C4SWBB_VOUT_TRGSRC;
+
+    c4swbb.feedback.ad_vout.differential_input = false;
+    c4swbb.feedback.ad_vout.interrupt_enable = true;
+    c4swbb.feedback.ad_vout.early_interrupt_enable = true;
+    c4swbb.feedback.ad_vout.level_trigger = true;
+    c4swbb.feedback.ad_vout.signed_result = false;
+    
+    c4swbb.feedback.ad_vout.scaling.factor = C4SWBB_VOUT_NORM_FACTOR;
+    c4swbb.feedback.ad_vout.scaling.scaler = C4SWBB_VOUT_NORM_SCALER;
+    c4swbb.feedback.ad_vout.scaling.offset = C4SWBB_VOUT_OFFSET;
+
+    C4SWBB_VOUT_ANSEL = c4swbb.feedback.ad_vout.enabled;
+    
+    // ~~~ OUTPUT VOLTAGE FEEDBACK END ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    // ~~~ INPUT VOLTAGE FEEDBACK ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    c4swbb.feedback.ad_vin.enabled = true;   // Use this channel
+
+    c4swbb.feedback.ad_vin.adc_input = C4SWBB_VIN_ADCIN;
+    c4swbb.feedback.ad_vin.adc_core = C4SWBB_VIN_ADCCORE;
+    c4swbb.feedback.ad_vin.adc_buffer = &C4SWBB_VIN_ADCBUF;
+    c4swbb.feedback.ad_vin.trigger_source = C4SWBB_VIN_TRGSRC;
+
+    c4swbb.feedback.ad_vin.differential_input = false;
+    c4swbb.feedback.ad_vin.interrupt_enable = false;
+    c4swbb.feedback.ad_vin.early_interrupt_enable = false;
+    c4swbb.feedback.ad_vin.level_trigger = false;
+    c4swbb.feedback.ad_vin.signed_result = false;
+
+    c4swbb.feedback.ad_vin.scaling.factor = C4SWBB_VIN_NORM_FACTOR;
+    c4swbb.feedback.ad_vin.scaling.scaler = C4SWBB_VIN_NORM_SCALER;
+    c4swbb.feedback.ad_vin.scaling.offset = C4SWBB_VIN_OFFSET;
+
+    C4SWBB_VIN_ANSEL = c4swbb.feedback.ad_vin.enabled;
+    
+    // ~~~ INPUT VOLTAGE FEEDBACK END ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    // ~~~ OUTPUT CURRENT FEEDBACK ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    c4swbb.feedback.ad_isns[0].enabled = true;   // Use this channel
+
+    c4swbb.feedback.ad_isns[0].adc_input = C4SWBB_ISNS_ADCIN;
+    c4swbb.feedback.ad_isns[0].adc_core = C4SWBB_ISNS_ADCCORE;
+    c4swbb.feedback.ad_isns[0].adc_buffer = &C4SWBB_ISNS_ADCBUF;
+    c4swbb.feedback.ad_isns[0].trigger_source = C4SWBB_ISNS_TRGSRC;
+
+    c4swbb.feedback.ad_isns[0].differential_input = false;
+    c4swbb.feedback.ad_isns[0].interrupt_enable = false;
+    c4swbb.feedback.ad_isns[0].early_interrupt_enable = false;
+    c4swbb.feedback.ad_isns[0].level_trigger = true;
+    c4swbb.feedback.ad_isns[0].signed_result = false;
+
+    c4swbb.feedback.ad_isns[0].scaling.factor = C4SWBB_ISNS_NORM_FACTOR;
+    c4swbb.feedback.ad_isns[0].scaling.scaler = C4SWBB_ISNS_NORM_SCALER;
+    c4swbb.feedback.ad_isns[0].scaling.offset = C4SWBB_ISNS_FB_OFFSET;
+
+    C4SWBB_ISNS_ANSEL = c4swbb.feedback.ad_isns[0].enabled;
+    
+    // ~~~ OUTPUT CURRENT FEEDBACK END ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    // ~~~ TEMPERATURE FEEDBACK ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    c4swbb.feedback.ad_temp.enabled = false;   // Use this channel
+    // ~~~ TEMPERATURE FEEDBACK END ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    return(retval);
+}
+
+/*******************************************************************************
+ * @ingroup app-layer-power-control-functions-private
+ * @fn	volatile uint16_t appPowerSupply_StartupInitialize(void)
+ * @brief  This function initializes the startup configuration of the buck converter device driver instance 
+ * @return unsigned integer (0=failure, 1=success)
+ *  
+ * @details
+ *  This function initializes the startup configuration of the buck converter 
+ *  device driver instance. A buck converter instance supports the following 
+ *  startup options:
+ * 
+ * - Power-On Delay:   
+ *   User-specified delay before the output voltage is ramping up
+ * 
+ * - VRamp-Up Period:  
+ *   User specified output voltage ramp-up period in which the output voltage 
+ *   is ramped up linearly from 0 to nominal output voltage
+ * 
+ * - IRamp-Up Period:  
+ *   User specified output current ramp-up period; This function is only 
+ *   available in average current mode control and only if a current limit 
+ *   is hit during a voltage ramp-up and the output voltage cannot reach the 
+ *   nominal level. under these conditions the state machine will switch over
+ *   to state IRamp-Up and linearly increase the current limit up to the 
+ *   allowed absolute maximum current. 
+ *   This mode has been introduced especially for battery chargers or when
+ *   converters are powering up against large capacitive loads.
+ * 
+ * - Power Good Delay: 
+ *   User-specified period during which the output must stand stable before 
+ *   the output is considered to be reliable
+ * 
+ * optional:
+ * - Open Loop Startup: 
+ *   Specific startup mode in average current mode control, where the PWM 
+ *   output is increased manually in open loop while the output is monitored.
+ *   This mode was introduced to bridge limited common mode voltage ranges
+ *   of certain current sense circuits, which require a certain, minimum 
+ *   voltage to be applied across the sense points before they start to 
+ *   produce reliable feedback signals.
+ * 
+ *********************************************************************************/
+
+volatile uint16_t appPowerSupply_StartupInitialize(void)
+{
+    volatile uint16_t retval = 1;
+
+    // Initialize Startup Settings
+    
+    c4swbb.startup.power_on_delay.period = C4SWBB_POD;
+    
+    c4swbb.startup.v_ramp.period = C4SWBB_VRAMP_PER;
+    c4swbb.startup.v_ramp.ref_inc_step = C4SWBB_VREF_STEP;
+    c4swbb.startup.v_ramp.ref_minimum = C4SWBB_ISNS_CMOD_LIMIT;
+    
+    if (c4swbb.set_values.control_mode == C4SWBB_CONTROL_MODE_ACMC) 
+    {
+        c4swbb.startup.i_ramp.period = C4SWBB_IRAMP_PER;
+        c4swbb.startup.i_ramp.ref_inc_step = C4SWBB_IREF_STEP;
+        c4swbb.startup.i_ramp.ref_start_limit = C4SWBB_ISNS_START_LIMIT;
+        
+        c4swbb.startup.open_loop.enabled = C4SWBB_OPEN_LOOP_STARTUP; // Enable/disable open loop startup with average current sense amplifier
+        c4swbb.startup.open_loop.vout_cutoff = C4SWBB_ISNS_CMOD_LIMIT; // Set common mode voltage limit as open loop cut-off voltage level
+        
+    }
+    else
+    {
+        c4swbb.startup.open_loop.enabled = false;
+        c4swbb.startup.open_loop.vout_cutoff = C4SWBB_VOUT_NOM;
+    }
+    
+    c4swbb.startup.power_good_delay.period = C4SWBB_PGD;
+    c4swbb.startup.power_good_delay.reference = C4SWBB_VOUT_REF;
+    
+    
+    return(retval);
+}
+
+/*******************************************************************************
+ * @ingroup app-layer-power-control-functions-private
+ * @fn	volatile uint16_t appPowerSupply_ControllerInitialize(void)
+ * @brief  This function initializes the control system feedback loop objects
+ * @return 0=failure
+ * @return 1=success
+ * 
+ * @details
+ * This function allows the user to set up and initialize the loop configuration. This 
+ * includes the following setup.
+ *     - Initialize Default Loop Configuration
+ *     - Set Controller Object of Voltage Loop
+ *     - Configure Voltage Loop Controller Object
+ *     - Configure controller input/output ports
+ *     - Data Input/Output Limit Configuration
+ *     - ADC Trigger Control Configuration
+ *     - Data Provider Configuration
+ *     - Cascaded Function Configuration
+ *     - Initialize Advanced Control Settings 
+ *     - Custom Advanced Control Settings
+ *********************************************************************************/
+
+volatile uint16_t appPowerSupply_ControllerInitialize(void)
+{
+    volatile uint16_t retval = 1;
+    
+    // ~~~ VOLTAGE LOOP CONFIGURATION ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    // Initialize Default Loop Configuration
+    c4swbb.v_loop.feedback_offset = C4SWBB_VOUT_OFFSET;
+    c4swbb.v_loop.reference = C4SWBB_VOUT_REF;
+    if (c4swbb.set_values.control_mode == C4SWBB_CONTROL_MODE_ACMC)
+    {
+        c4swbb.v_loop.minimum = C4SWBB_ISNS_MIN; // Control output range minimum = minimum output current
+        c4swbb.v_loop.maximum = C4SWBB_ISNS_OCL; // Control output range maximum = maximum output current
+    }
+    if (c4swbb.set_values.control_mode == C4SWBB_CONTROL_MODE_VMC)
+    {
+        c4swbb.v_loop.minimum = 0; // Control output range minimum = Duty cycle = 0
+        c4swbb.v_loop.maximum = (C4SWBB_PWM_PERIOD << 1); // Control output range maximum = 2x period
+    }   
+    c4swbb.v_loop.trigger_offset = ((C4SWBB_PWM_PERIOD >> 1) + C4SWBB_VOUT_ADC_TRGDLY);
+    
+     // Set Controller Object of Voltage Loop
+    c4swbb.v_loop.controller = &v_loop;
+    c4swbb.v_loop.ctrl_Initialize = &v_loop_Initialize;
+    c4swbb.v_loop.ctrl_Update = &v_loop_Update;
+    c4swbb.v_loop.ctrl_Reset = &v_loop_Reset;
+    c4swbb.v_loop.ctrl_Precharge = &v_loop_Precharge;
+    
+    // Configure Voltage Loop Controller Object
+    c4swbb.v_loop.ctrl_Initialize(&v_loop);   // Call Initialization Routine setting histories and scaling
+    
+    // Configure controller input ports
+    c4swbb.v_loop.controller->Ports.Source.ptrAddress = &C4SWBB_VOUT_ADCBUF; // Output Voltage is Common Source
+    c4swbb.v_loop.controller->Ports.Source.Offset = c4swbb.v_loop.feedback_offset; // Output Voltage feedback signal offset 
+    c4swbb.v_loop.controller->Ports.Source.NormScaler = C4SWBB_VOUT_NORM_SCALER; // Output voltage normalization factor bit-shift scaler 
+    c4swbb.v_loop.controller->Ports.Source.NormFactor = C4SWBB_VOUT_NORM_FACTOR; // Output voltage normalization factor fractional
+    
+    c4swbb.v_loop.controller->Ports.AltSource.ptrAddress = &C4SWBB_VIN_ADCBUF; // Input Voltage Is Alternate Source
+    c4swbb.v_loop.controller->Ports.AltSource.Offset = C4SWBB_VIN_OFFSET; // Input Voltage feedback signal offset 
+    c4swbb.v_loop.controller->Ports.AltSource.NormScaler = C4SWBB_VIN_NORM_SCALER; // Input voltage normalization factor bit-shift scaler 
+    c4swbb.v_loop.controller->Ports.AltSource.NormFactor = C4SWBB_VIN_NORM_FACTOR; // Input voltage normalization factor fractional
+
+    // Configure controller output ports
+    if (c4swbb.set_values.control_mode == C4SWBB_CONTROL_MODE_ACMC)
+    {
+        c4swbb.v_loop.controller->Ports.Target.ptrAddress = &c4swbb.i_loop[0].reference; // Current loop reference is Control Target in ACMC
+    }
+    if (c4swbb.set_values.control_mode == C4SWBB_CONTROL_MODE_VMC)
+    {
+        c4swbb.v_loop.controller->Ports.Target.ptrAddress = &c4swbb.sw_node[0].pwm_distribution.ControlOutput; // PWM Duty Cycle is Control Target in VMC
+    }
+    c4swbb.v_loop.controller->Ports.Target.Offset = 0; // Static primary output value offset
+    c4swbb.v_loop.controller->Ports.Target.NormScaler = 0; // Primary control output normalization factor bit-shift scaler 
+    c4swbb.v_loop.controller->Ports.Target.NormFactor = 0x7FFF; // Primary control output normalization factor fractional 
+
+    c4swbb.v_loop.controller->Ports.AltTarget.ptrAddress = NULL; // No alternate target used
+    c4swbb.v_loop.controller->Ports.AltTarget.Offset = 0; // Static secondary output value offset
+    c4swbb.v_loop.controller->Ports.AltTarget.NormScaler = 0; // Secondary control output normalization factor bit-shift scaler
+    c4swbb.v_loop.controller->Ports.AltTarget.NormFactor = 0x7FFF; // Secondary control output normalization factor fractional 
+    
+    // Configure controller control ports
+    c4swbb.v_loop.controller->Ports.ptrControlReference = &c4swbb.v_loop.reference; // Set pointer to Reference
+    
+    // Data Input/Output Limit Configuration
+    c4swbb.v_loop.controller->Limits.MinOutput = c4swbb.v_loop.minimum;
+    c4swbb.v_loop.controller->Limits.MaxOutput = c4swbb.v_loop.maximum;
+    c4swbb.v_loop.controller->Limits.AltMinOutput = 0; // not used
+    c4swbb.v_loop.controller->Limits.AltMaxOutput = 0; // not used
+
+    // ADC Trigger Control Configuration
+    c4swbb.v_loop.controller->ADCTriggerControl.ptrADCTriggerARegister = &C4SWBB_VOUT_ADCTRIG;
+    c4swbb.v_loop.controller->ADCTriggerControl.ADCTriggerAOffset = c4swbb.v_loop.trigger_offset;
+    c4swbb.v_loop.controller->ADCTriggerControl.ptrADCTriggerBRegister = &C4SWBB_ISNS_ADCTRIG;
+    c4swbb.v_loop.controller->ADCTriggerControl.ADCTriggerBOffset = C4SWBB_ISNS_ADC_TRGDLY; 
+    
+    // Data Provider Configuration
+    c4swbb.v_loop.controller->DataProviders.ptrDProvControlInput = &c4swbb.data.control_input; 
+    c4swbb.v_loop.controller->DataProviders.ptrDProvControlInputCompensated = &c4swbb.data.v_out; 
+    c4swbb.v_loop.controller->DataProviders.ptrDProvControlError = &c4swbb.data.control_error; 
+    c4swbb.v_loop.controller->DataProviders.ptrDProvControlOutput = &c4swbb.data.control_output;
+    
+    // User Extension Function Configuration
+    /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     * 
+     * PowerSmart DCLD allows users to create and call user extension 
+     * functions from specific locations of the main control loop to 
+     * cover design-specific requirements and features which are not
+     * supported by the main controller by default.
+     * 
+     * Control Loop User Extension Declaration Example:
+     * 
+     *  c4swbb.v_loop.controller->ExtensionHooks.ptrExtHookStartFunction = (uint16_t)&my_function; 
+     * 
+     * Control Loop User Extension Parameter Declaration Example (optional):
+     * 
+     *  c4swbb.v_loop.controller->ExtensionHooks.ExtHookStartFunctionParam = 512;
+     * 
+     * Please refer to the PowerSmart DCLD User Guide for more details about
+     * how to use this feature, its requirements and limitations.
+     * 
+     * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    */
+    
+    c4swbb.v_loop.controller->ExtensionHooks.ptrExtHookStartFunction = NULL;
+    c4swbb.v_loop.controller->ExtensionHooks.ExtHookStartFunctionParam = 0;
+    c4swbb.v_loop.controller->ExtensionHooks.ptrExtHookSourceFunction = NULL;
+    c4swbb.v_loop.controller->ExtensionHooks.ExtHookSourceFunctionParam = 0;
+    c4swbb.v_loop.controller->ExtensionHooks.ptrExtHookPreAntiWindupFunction = NULL;
+    c4swbb.v_loop.controller->ExtensionHooks.ExtHookPreAntiWindupFunctionParam = 0;
+    c4swbb.v_loop.controller->ExtensionHooks.ptrExtHookPreTargetWriteFunction = NULL;
+    c4swbb.v_loop.controller->ExtensionHooks.ExtHookPreTargetWriteFunctionParam = 0;
+    c4swbb.v_loop.controller->ExtensionHooks.ptrExtHookEndOfLoopFunction = NULL;
+    c4swbb.v_loop.controller->ExtensionHooks.ExtHookEndOfLoopFunctionParam = 0;
+    if (c4swbb.set_values.control_mode == C4SWBB_CONTROL_MODE_ACMC)
+    {
+        c4swbb.v_loop.controller->ExtensionHooks.ptrExtHookExitFunction = (uint16_t)&i_loop_Update;
+        c4swbb.v_loop.controller->ExtensionHooks.ExtHookExitFunctionParam = (uint16_t)&i_loop;
+    }
+    if (c4swbb.set_values.control_mode == C4SWBB_CONTROL_MODE_VMC)
+    {
+        c4swbb.v_loop.controller->ExtensionHooks.ptrExtHookExitFunction = NULL;
+        c4swbb.v_loop.controller->ExtensionHooks.ExtHookExitFunctionParam = 0;
+    }
+    // Initialize Advanced Control Settings (not used in this code example)
+    c4swbb.v_loop.controller->GainControl.AgcFactor = 0x7FFF; // Adaptive Gain Control factor fractional
+    c4swbb.v_loop.controller->GainControl.AgcScaler = 0x0000; // Adaptive Gain Control factor bit-shift scaler
+    c4swbb.v_loop.controller->GainControl.AgcMedian = 0x0000; // Q15 number representing normalized Nominal Operating Point
+
+    // Custom Advanced Control Settings
+    c4swbb.v_loop.controller->Advanced.usrParam0 = 0; // No additional advanced control options used
+    c4swbb.v_loop.controller->Advanced.usrParam1 = 0; // No additional advanced control options used
+    c4swbb.v_loop.controller->Advanced.usrParam2 = 0; // No additional advanced control options used
+    c4swbb.v_loop.controller->Advanced.usrParam3 = 0; // No additional advanced control options used
+    c4swbb.v_loop.controller->Advanced.usrParam4 = 0; // No additional advanced control options used
+    c4swbb.v_loop.controller->Advanced.usrParam5 = 0; // No additional advanced control options used
+    c4swbb.v_loop.controller->Advanced.usrParam6 = 0; // No additional advanced control options used
+    c4swbb.v_loop.controller->Advanced.usrParam7 = 0; // No additional advanced control options used
+    
+    // Reset Controller Status
+    c4swbb.v_loop.controller->status.bits.enabled = false; // Keep controller disabled
+    c4swbb.v_loop.controller->status.bits.swap_source = false; // use SOURCE as major control input
+    c4swbb.v_loop.controller->status.bits.swap_target = false; // use TARGET as major control output
+    c4swbb.v_loop.controller->status.bits.invert_input = false; // Do not invert input value
+    c4swbb.v_loop.controller->status.bits.lower_saturation_event = false; // Reset Anti-Windup Minimum Status bit
+    c4swbb.v_loop.controller->status.bits.upper_saturation_event = false; // Reset Anti-Windup Minimum Status bits
+    c4swbb.v_loop.controller->status.bits.agc_enabled = false;   // Enable Adaptive Gain Modulation by default
+
+    // ~~~ VOLTAGE LOOP CONFIGURATION END ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    // ~~~ CURRENT LOOP CONFIGURATION ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    // Initialize Default Loop Configuration
+    c4swbb.i_loop[0].feedback_offset = C4SWBB_ISNS_FB_OFFSET;
+    c4swbb.i_loop[0].reference = C4SWBB_ISNS_START_LIMIT;
+    c4swbb.i_loop[0].minimum = 0; // Control output range minimum = Duty cycle = 0
+    c4swbb.i_loop[0].maximum = (C4SWBB_PWM_PERIOD << 1); // Control output range maximum = 2x period
+//    c4swbb.i_loop[0].trigger_offset = ((C4SWBB_PWM_PERIOD >> 1) + C4SWBB_ISNS_ADC_TRGDLY);
+    c4swbb.i_loop[0].trigger_offset = C4SWBB_ISNS_ADC_TRGDLY;
+    
+     // Set Controller Object of Voltage Loop
+    c4swbb.i_loop[0].controller = &i_loop;
+    c4swbb.i_loop[0].ctrl_Initialize = &i_loop_Initialize;
+    c4swbb.i_loop[0].ctrl_Update = &i_loop_Update;
+    c4swbb.i_loop[0].ctrl_Reset = &i_loop_Reset;
+    c4swbb.i_loop[0].ctrl_Precharge = &i_loop_Precharge;
+    
+    // Configure Current Loop Controller Object
+    c4swbb.i_loop[0].ctrl_Initialize(&i_loop);   // Call Initialization Routine setting histories and scaling
+    
+    // Configure controller input ports
+    c4swbb.i_loop[0].controller->Ports.Source.ptrAddress = &C4SWBB_ISNS_ADCBUF; // Output Voltage is Common Source
+    c4swbb.i_loop[0].controller->Ports.Source.Offset = c4swbb.i_loop[0].feedback_offset; // Output Voltage feedback signal offset 
+    c4swbb.i_loop[0].controller->Ports.Source.NormScaler = C4SWBB_ISNS_NORM_SCALER; // Output voltage normalization factor bit-shift scaler 
+    c4swbb.i_loop[0].controller->Ports.Source.NormFactor = C4SWBB_ISNS_NORM_FACTOR; // Output voltage normalization factor fractional
+    
+    c4swbb.i_loop[0].controller->Ports.AltSource.ptrAddress = &C4SWBB_VIN_ADCBUF; // Input Voltage Is Alternate Source
+    c4swbb.i_loop[0].controller->Ports.AltSource.Offset = C4SWBB_VIN_OFFSET; // Input Voltage feedback signal offset 
+    c4swbb.i_loop[0].controller->Ports.AltSource.NormScaler = C4SWBB_VIN_NORM_SCALER; // Input voltage normalization factor bit-shift scaler 
+    c4swbb.i_loop[0].controller->Ports.AltSource.NormFactor = C4SWBB_VIN_NORM_FACTOR; // Input voltage normalization factor fractional
+
+    // Configure controller output ports
+    c4swbb.i_loop[0].controller->Ports.Target.ptrAddress = &c4swbb.sw_node[0].pwm_distribution.ControlOutput; // PWM Duty Cycle is Control Target
+    c4swbb.i_loop[0].controller->Ports.Target.Offset = 0; // Static primary output value offset
+    c4swbb.i_loop[0].controller->Ports.Target.NormScaler = 0; // Primary control output normalization factor bit-shift scaler 
+    c4swbb.i_loop[0].controller->Ports.Target.NormFactor = 0x7FFF; // Primary control output normalization factor fractional 
+
+    c4swbb.i_loop[0].controller->Ports.AltTarget.ptrAddress = NULL; // No alternate target used
+    c4swbb.i_loop[0].controller->Ports.AltTarget.Offset = 0; // Static secondary output value offset
+    c4swbb.i_loop[0].controller->Ports.AltTarget.NormScaler = 0; // Secondary control output normalization factor bit-shift scaler
+    c4swbb.i_loop[0].controller->Ports.AltTarget.NormFactor = 0x7FFF; // Secondary control output normalization factor fractional 
+    
+    // Configure controller control ports
+    c4swbb.i_loop[0].controller->Ports.ptrControlReference = &c4swbb.i_loop[0].reference; // Set pointer to Reference
+    
+    // Data Input/Output Limit Configuration
+    c4swbb.i_loop[0].controller->Limits.MinOutput = c4swbb.i_loop[0].minimum;
+    c4swbb.i_loop[0].controller->Limits.MaxOutput = c4swbb.i_loop[0].maximum;
+    c4swbb.i_loop[0].controller->Limits.AltMinOutput = 0; // not used
+    c4swbb.i_loop[0].controller->Limits.AltMaxOutput = 0; // not used
+
+    // ADC Trigger Control Configuration
+    c4swbb.i_loop[0].controller->ADCTriggerControl.ptrADCTriggerARegister = &C4SWBB_VOUT_ADCTRIG;
+    c4swbb.i_loop[0].controller->ADCTriggerControl.ADCTriggerAOffset = c4swbb.v_loop.trigger_offset;
+    c4swbb.i_loop[0].controller->ADCTriggerControl.ptrADCTriggerBRegister = &C4SWBB_ISNS_ADCTRIG;
+    c4swbb.i_loop[0].controller->ADCTriggerControl.ADCTriggerBOffset = C4SWBB_ISNS_ADC_TRGDLY; 
+    
+    // Data Provider Configuration
+    c4swbb.i_loop[0].controller->DataProviders.ptrDProvControlInput = &c4swbb.data.control_input; 
+    c4swbb.i_loop[0].controller->DataProviders.ptrDProvControlInputCompensated = &c4swbb.data.i_sns[0]; 
+    c4swbb.i_loop[0].controller->DataProviders.ptrDProvControlError = &c4swbb.data.control_error; 
+    c4swbb.i_loop[0].controller->DataProviders.ptrDProvControlOutput = &c4swbb.data.control_output;
+    
+    // User Extension Function Configuration
+    /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     * 
+     * PowerSmart DCLD allows users to create and call user extension 
+     * functions from specific locations of the main control loop to 
+     * cover design-specific requirements and features which are not
+     * supported by the main controller by default.
+     * 
+     * Control Loop User Extension Declaration Example:
+     * 
+     *  buck.v_loop.controller->ExtensionHooks.ptrExtHookStartFunction = (uint16_t)&my_function; 
+     * 
+     * Control Loop User Extension Parameter Declaration Example (optional):
+     * 
+     *  buck.v_loop.controller->ExtensionHooks.ExtHookStartFunctionParam = 512;
+     * 
+     * Please refer to the PowerSmart DCLD User Guide for more details about
+     * how to use this feature, its requirements and limitations.
+     * 
+     * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    */
+    
+    c4swbb.i_loop[0].controller->ExtensionHooks.ptrExtHookStartFunction = NULL;
+    c4swbb.i_loop[0].controller->ExtensionHooks.ExtHookStartFunctionParam = 0;
+    c4swbb.i_loop[0].controller->ExtensionHooks.ptrExtHookSourceFunction = NULL;
+    c4swbb.i_loop[0].controller->ExtensionHooks.ExtHookSourceFunctionParam = 0;
+    c4swbb.i_loop[0].controller->ExtensionHooks.ptrExtHookPreAntiWindupFunction = NULL;
+    c4swbb.i_loop[0].controller->ExtensionHooks.ExtHookPreAntiWindupFunctionParam = 0;
+    c4swbb.i_loop[0].controller->ExtensionHooks.ptrExtHookPreTargetWriteFunction = NULL;
+    c4swbb.i_loop[0].controller->ExtensionHooks.ExtHookPreTargetWriteFunctionParam = 0;
+    c4swbb.i_loop[0].controller->ExtensionHooks.ptrExtHookEndOfLoopFunction = (uint16_t)c4swbbPwmDistribution;
+    c4swbb.i_loop[0].controller->ExtensionHooks.ExtHookEndOfLoopFunctionParam = (uint16_t)&c4swbb.sw_node[0].pwm_distribution;
+    c4swbb.i_loop[0].controller->ExtensionHooks.ptrExtHookExitFunction = NULL;
+    c4swbb.i_loop[0].controller->ExtensionHooks.ExtHookExitFunctionParam = 0;
+    
+    // Initialize Advanced Control Settings (not used in this code example)
+    c4swbb.i_loop[0].controller->GainControl.AgcFactor = 0x7FFF; // Adaptive Gain Control factor fractional
+    c4swbb.i_loop[0].controller->GainControl.AgcScaler = 0x0000; // Adaptive Gain Control factor bit-shift scaler
+    c4swbb.i_loop[0].controller->GainControl.AgcMedian = 0x0000; // Q15 number representing normalized Nominal Operating Point
+
+    // Custom Advanced Control Settings
+    c4swbb.i_loop[0].controller->Advanced.usrParam0 = 0; // No additional advanced control options used
+    c4swbb.i_loop[0].controller->Advanced.usrParam1 = 0; // No additional advanced control options used
+    c4swbb.i_loop[0].controller->Advanced.usrParam2 = 0; // No additional advanced control options used
+    c4swbb.i_loop[0].controller->Advanced.usrParam3 = 0; // No additional advanced control options used
+    c4swbb.i_loop[0].controller->Advanced.usrParam4 = 0; // No additional advanced control options used
+    c4swbb.i_loop[0].controller->Advanced.usrParam5 = 0; // No additional advanced control options used
+    c4swbb.i_loop[0].controller->Advanced.usrParam6 = 0; // No additional advanced control options used
+    c4swbb.i_loop[0].controller->Advanced.usrParam7 = 0; // No additional advanced control options used
+    
+    // Reset Controller Status
+    c4swbb.i_loop[0].controller->status.bits.enabled = false; // Keep controller disabled
+    c4swbb.i_loop[0].controller->status.bits.swap_source = false; // use SOURCE as major control input
+    c4swbb.i_loop[0].controller->status.bits.swap_target = false; // use TARGET as major control output
+    c4swbb.i_loop[0].controller->status.bits.invert_input = false; // Do not invert input value
+    c4swbb.i_loop[0].controller->status.bits.lower_saturation_event = false; // Reset Anti-Windup Minimum Status bit
+    c4swbb.i_loop[0].controller->status.bits.upper_saturation_event = false; // Reset Anti-Windup Minimum Status bits
+    c4swbb.i_loop[0].controller->status.bits.agc_enabled = false;   // Enable Adaptive Gain Modulation by default
+
+    // ~~~ CURRENT LOOP CONFIGURATION END ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        
+    return(retval);
+}
+
+/*******************************************************************************
+ * @ingroup app-layer-power-control-functions-private
+ * @fn	volatile uint16_t appPowerSupply_PeripheralsInitialize(void)
+ * @brief  This function is used to load peripheral configuration templates from the power controller device driver
+ * @return 0=failure
+ * @return 1=success
+ * 
+ * @details
+ * This function hand over the peripheral configuration to the SEPIC
+ * converter device driver
+ *********************************************************************************/
+
+volatile uint16_t appPowerSupply_PeripheralsInitialize(void)
+{
+    volatile uint16_t retval=1;
+    
+    retval &= dev_c4swbbConverter_Initialize(&c4swbb);
+    
+    return(retval);
+}
+
+/*******************************************************************************
+ * @ingroup app-layer-power-control-functions-private
+ * @fn	volatile uint16_t appPowerSupply_InterruptsInitialize(void)
+ * @brief  This function is used to initialize the interrupt service events of the control loop
+ * @return 0=failure
+ * @return 1=success
+ * 
+ * @details
+ * This function initializes and enables the control loop interrupt(s) of the
+ * cycle-by-cycle real-time control. These interrupts are commonly synchronous
+ * to the switching process and therefore triggered by ADC conversion or PWM 
+ * event interrupts. The interrupt service routines are called on high levels 
+ * overriding the recently executed processes to maintain real-time accuracy
+ * of the feedback loop response.
+ * 
+ *********************************************************************************/
+
+volatile uint16_t appPowerSupply_InterruptsInitialize(void)
+{
+    volatile uint16_t retval=1;
+
+    // Initialize Control Interrupt
+    _C4SWBB_VLOOP_ISR_IP = C4SWBB_VOUT_ISR_PRIORITY;
+    _C4SWBB_VLOOP_ISR_IF = 0;
+    _C4SWBB_VLOOP_ISR_IE = true;
+    
+    retval &= (_C4SWBB_VLOOP_ISR_IE); // Return INTERRUPT_ENABLE flag bit
+    
+    return(retval);
+}
+
+
+// end of file

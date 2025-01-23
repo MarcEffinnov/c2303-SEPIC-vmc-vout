@@ -1,0 +1,128 @@
+/*----------------------------------------------------------------------------*/
+/* TASK LAYER: Real-Time Operating System Layer Task Documentation */
+/*----------------------------------------------------------------------------*/
+
+/*RTOS*/
+
+/**
+@defgroup operating-system-layer Real-Time Operating System Layer
+@ingroup  app-rtos-layer
+@brief Contain functions and properties of the real-time operating system layer
+@details 
+*/
+
+	/* PUBLIC FUNCTIONS */
+	/** 
+	@defgroup operating-system-functions-public Public Functions
+	@ingroup operating-system-layer
+	@brief Public functions of the real-time operating system library layer
+	@details 
+	*/
+	
+	/* PUBLIC PROPERTIES */
+	/**
+	@defgroup operating-system-properties-public Public Properties
+	@ingroup operating-system-layer
+	@brief Public properties of the real-time operating system library layer
+	@details 
+	*/
+		/* DATA TYPES */
+		/**
+		@defgroup operating-system-properties-public-data-types Data Types
+		@ingroup operating-system-properties-public
+		@brief Public data types of real-time operating system library layer
+		*/
+		
+	/* PRIVATE FUNCTIONS */
+	/**
+	@cond HIDE_THIS
+	@defgroup operating-system-functions-private Private Functions
+	@ingroup operating-system-layer
+	@brief 
+	@details 
+	@endcond
+	*/
+		
+	/* PRIVATE PROPERTIES */
+	/**
+	@cond HIDE_THIS
+	@defgroup operating-system-properties-private Private Properties
+	@ingroup operating-system-layer
+	@brief 
+	@details 
+	@endcond
+	*/
+		/* VARIABLES */
+		/**
+		@cond HIDE_THIS
+		@defgroup operating-system-properties-private-variables Variables & Constants
+		@ingroup operating-system-properties-private
+		@note 
+		@endcond
+		*/
+		/* DATA TYPES */
+		/**
+		@cond HIDE_THIS
+		@defgroup operating-system-properties-private-data-types Data Types
+		@ingroup operating-system-properties-private
+		
+		@defgroup operating-system-task-queue-declarations Task Queue Declarations
+		@ingroup operating-system-properties-private-data-types
+		
+		@defgroup operating-system-objects Objects
+		@ingroup operating-system-properties-private-data-types
+		@endcond
+		*/
+		
+		
+/*----------------------------------------------------------------------------*/
+/* TASK LAYER: Real-Time Operating System EXCEPTION Layer Task Documentation */
+/*----------------------------------------------------------------------------*/
+
+/*RTOS*/		
+/**
+@defgroup operating-system-exceptions-layer Real-Time Operating System Exception Layer
+@ingroup app-rtos-layer
+@brief Contain functions and properties of the real-time operating system exception layer
+@details 
+*/
+
+	/* PUBLIC FUNCTIONS */
+	/** 
+	@defgroup operating-system-exceptions-functions-public Public Functions
+	@ingroup operating-system-exceptions-layer
+	@brief Public functions of the real-time operating system exception library layer
+	@details 
+	*/
+	
+	/* PUBLIC PROPERTIES */
+	/**
+	@defgroup operating-system-exceptions-public-properties Public Properties
+	@ingroup operating-system-exceptions-layer
+	@brief Public properties of the real-time operating system exception library layer
+	@details 
+	*/
+		/* DATA TYPES */
+		/**
+		@defgroup operating-system-exceptions-public-properties-data-types Data Types
+		@ingroup operating-system-exceptions-public-properties
+		@brief Public data types of the real-time operating system exception library layer
+		*/
+		/* MACROS */
+		/**
+		@defgroup operating-system-exceptions-public-properties-defines Defines and Macros
+		@ingroup operating-system-exceptions-public-properties
+		@brief Public defines and macros of the real-time operating system exception library layer
+		*/
+
+	/* PRIVATE FUNCTIONS */
+	/**
+	@cond HIDE_THIS
+	@defgroup operating-system-exceptions-functions-private Private Functions
+	@ingroup operating-system-exceptions-layer
+	@brief 
+	@details 
+	@endcond
+	*/
+		
+	

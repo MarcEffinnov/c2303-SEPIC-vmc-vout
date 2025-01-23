@@ -1,0 +1,101 @@
+/*----------------------------------------------------------------------------*/
+/* LIBRARY LAYER: Real-Time Operating System Layer Documentation */
+/*----------------------------------------------------------------------------*/
+
+/**
+@defgroup rtos-boot-library Boot Layer Library
+@ingroup operating-system-layer
+@details The initialization of essential chip resources includes main oscillator initialization, 
+ GPIO reset and peripheral power management. All other chip resources are managed by each
+ individual task or are initialized in the user peripheral initialization called after the
+ essential chip resources have been configured.
+*/
+
+/**
+@defgroup rtos-boot-library-dsp Digital Signal Processor (DSP)
+@ingroup rtos-boot-library
+@brief Real-Time Operating System Boot Digital Signal Processor (DSP)
+@details The Digital Signal Processor (DSP) of dsPIC33C can be configured to support specific functions 
+ optimized for fixed-point arithmetic of a normalized number space as well as enhanced features 
+ such as accumulator and write-back saturation. As there is no other software instance using the 
+ DSP other than the power supply control loops, the DSP is configured at device start to save 
+ time during high frequency computations of the high-speed control loop.
+
+*/
+	/**
+	@defgroup rtos-boot-library-dsp-public-functions Public Functions
+	@ingroup rtos-boot-library-dsp
+	@brief Public functions of real-time operating system boot Digital Signal Processor(DSP).
+	*/
+
+/**
+@defgroup rtos-boot-library-fosc Clock Oscillator
+@ingroup rtos-boot-library
+@brief Real-Time Operating System Boot Clock Oscillator
+@details The main oscillator initialization configures the internal PLL to boost the user-defined 
+ source clock to the desired operating frequency (e.g. 100 MHz for dsPIC33CK). 
+
+*/
+	/**
+	@defgroup rtos-boot-library-fosc-public-functions Public Functions
+	@ingroup rtos-boot-library-fosc
+	@brief Public functions of real-time operating system boot clock oscillator.
+	*/
+
+/**
+@defgroup rtos-boot-library-gpio General Purpose Input/Output (GPIO)
+@ingroup rtos-boot-library
+@brief Real-Time Operating System Boot General Purpose Input/Output (GPIO)
+@details When the device comes out of RESET, all general purpose inputs/outputs (GPIO) are configured
+ as high-impedance inputs. Sample and hold (S&H) circuits of ADC inputs are active and digital
+ functions are blocked. Depending on the application, this may or may not be desired. Hence,
+ this routine is used to set a different default state at startup where GPIOs are high impedance
+ inputs but all analog functions are disabled. 
+
+*/
+	/**
+	@defgroup rtos-boot-library-gpio-public-functions Public Functions
+	@ingroup rtos-boot-library-gpio
+	@brief Public functions of real-time operating system boot General Purpose Input/Output (GPIO).
+	*/
+	
+/**
+@defgroup rtos-boot-library-pmd Peripheral Module Disable (PMD)
+@ingroup rtos-boot-library
+@brief Real-Time Operating System Boot Peripheral Module Disable (PMD)
+@details When the device is coming out of RESET, all peripheral modules are powered
+   and active, ready to be initialized and used. However, each active peripheral
+   consumes power and accidental writes to any of its specifal function registers
+   may be a potential source for undesired behavior. Hence, in this application 
+   all power supply to all peripheral modules are disabled, minimizing the device 
+   power consumption and preventing potential misbehavior of unused peripheral 
+   modules. 
+*/
+	/**
+	@defgroup rtos-boot-library-pmd-public-functions Public Functions
+	@ingroup rtos-boot-library-pmd
+	@brief Public functions of real-time operating system boot Peripheral Module Disable (PMD).
+	*/	
+	
+/**
+@defgroup rtos-boot-library-timer Timer
+@ingroup rtos-boot-library
+@brief Real-Time Operating System Boot Timer
+@details A simple 16-bit timer is used to generate the time base of the operating system. 
+ This timer is set to overflow after the time period specified by @ref MAIN_EXECUTION_PERIOD 
+ in the hardware abstraction layer. This time period is used to pace the high- and low priority
+ task sequences of the main program. 
+ 
+ Two public functions are provided to initialize the time base, configuring its desired period
+ as well as setting up the interrupt priority of the high priority task sequence execution, and
+ an ENABLE function, enabling the high priority task sequence execution interrupt. 
+ 
+ Once the OS Timer and its interrupts are enabled, the main program will start to execute
+ the user tasks with their respective priority and in their given order.
+
+*/
+	/**
+	@defgroup rtos-boot-library-timer-public-functions Public Functions
+	@ingroup rtos-boot-library-timer
+	@brief Public functions of real-time operating system boot Timer.
+	*/	

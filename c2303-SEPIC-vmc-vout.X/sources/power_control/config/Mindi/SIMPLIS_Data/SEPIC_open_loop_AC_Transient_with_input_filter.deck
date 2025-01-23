@@ -1,0 +1,329 @@
+* C:\Users\m24683\OneDrive\dev\mplab\DIGITAL_POWER\LEAH\HOST_MCU\HOST_SEPIC\_working\LEAH_HOST_MCU_SEPIC_VMC_VOUT\LEAH-SEPIC-vmc-vout.X\sources\power_control\config\Mindi\SEPIC_open_loop_AC_Transient_with_input_filter.sxsch
+.node_map PWM 52
+.node_map FB 53
+.node_map VOUT 51
+.node_map IOUT 50
+.node_map VK_GAINS 54
+.node_map VCTRL 49
+.ac DEC 100 10 50k
+.print  ALL
+.options PSP_START=470u PSP_NPT=10001 POP_ITRMAX=20 POP_OUTPUT_CYCLES=5 SNAPSHOT_INTVL=0
++ NEW_ANALYSIS MIN_AVG_TOPOLOGY_DUR=1a AVG_TOPOLOGY_DUR_MEASUREMENT_WINDOW=128
+.pop  TRIG_GATE=X1.!D_CYCLE  TRIG_COND=0_TO_1  MAX_PERIOD=100u  CONVERGENCE=10f  CYCLES_BEFORE_LAUNCH=1000
++  TD_RUN_AFTER_POP_FAILS=-1
+X$C1 42 0 WEBSIM_ECAP1$1
+X$C10 51 0 WEBSIM_ECAP1$2
+X$C2 42 0 WEBSIM_ECAP1$3
+X$C5 36 0 WEBSIM_ECAP1$4
+C7 29 30 10u
+X$CIN1 40 0 MULTI_LEVEL_CAP_QTY$5
+X$CIN2 40 0 MULTI_LEVEL_CAP_QTY$6
+X$D5 35 51 SCHOTTKY_DIODE_SPICE_V3$7
+E3 54 0 49 0 1
+X$H3 50 0 39 44 H3$TP_CCVS$8
+V$IPROBE10 34 35 0.0
+.PRINT I(V$IPROBE10)
+.GRAPH IPROBE10#P axisType="owngrid" persistence=-1 graphName="Ind" curveLabel="ID1"
++ analysis="tran|pop" xLog="auto" yLog="lin"  nowarn=true GUID="bf5e9bc1-f4eb-401f-9e9a-d40a9fea4fd6"
++ disabled=false 
+V$IPROBE11 51 39 0.0
+.PRINT I(V$IPROBE11)
+.GRAPH IPROBE11#P axisType="owngrid" persistence=-1 graphName="Out" curveLabel="IOUT"
++ analysis="tran|pop" xLog="auto" yLog="lin"  nowarn=true GUID="c7cf8c3b-8641-40cf-9cc4-b09c5be890b7"
++ disabled=false 
+V$IPROBE12 32 31 0.0
+.PRINT I(V$IPROBE12)
+.GRAPH IPROBE12#P axisType="owngrid" persistence=-1 graphName="Ind" curveLabel="IL1"
++ analysis="tran|pop" xLog="auto" yLog="lin"  nowarn=true GUID="03556e56-11ee-4ec1-be56-8a26e427f4bd"
++ disabled=false 
+V$IPROBE4 42 38 0.0
+.PRINT I(V$IPROBE4)
+.GRAPH IPROBE4#P axisType="owngrid" persistence=-1 graphName="Ind" curveLabel="IIN"
++ analysis="tran|pop" xLog="auto" yLog="lin"  nowarn=true GUID="28d242de-52a3-416d-a812-33800ce6f7a3"
++ disabled=false 
+V$IPROBE5 27 28 0.0
+.PRINT I(V$IPROBE5)
+.GRAPH IPROBE5#P axisType="owngrid" persistence=-1 graphName="Ind" curveLabel="Icap"
++ analysis="tran|pop" xLog="auto" yLog="lin"  nowarn=true GUID="cf04cc4b-faf2-46ae-b22a-dcd114b079c2"
++ disabled=false 
+V$IPROBE6 37 43 0.0
+.PRINT I(V$IPROBE6)
+.GRAPH IPROBE6#P axisType="owngrid" persistence=-1 graphName="Ind" curveLabel="Isense_pcmc"
++ analysis="tran|pop" xLog="auto" yLog="lin"  nowarn=true GUID="8a46b930-0461-4c13-b099-cb1f4be1f4ef"
++ disabled=false 
+V$IPROBE8 51 36 0.0
+.PRINT I(V$IPROBE8)
+.GRAPH IPROBE8#P axisType="owngrid" persistence=-1 graphName="Out" curveLabel="ICOUT"
++ analysis="tran|pop" xLog="auto" yLog="lin"  nowarn=true GUID="f594fa65-10eb-4e17-ad6b-69fe46169c19"
++ disabled=false 
+V$IPROBE9 33 29 0.0
+.PRINT I(V$IPROBE9)
+.GRAPH IPROBE9#P axisType="owngrid" persistence=-1 graphName="Ind" curveLabel="IL2"
++ analysis="tran|pop" xLog="auto" yLog="lin"  nowarn=true GUID="58726b55-82db-40f4-9e39-8d982a210dda"
++ disabled=false 
+L_in_filter 40 41 330n IC=600m
+.PRINT V(#IOUT)
+.PRINT V(#VCTRL)
+.GRAPH "db(:#IOUT/:#VCTRL)" GUID="798809e1-252c-444d-9954-ae676f9d91d7" Curvelabel="Gid
++ Gain" nowarn=true yunit="dB" complete=True analysis="ac" ylog=lin xlog=auto  ydelta=20
++ persistence=-1 colourname=Probe1_bode_color  graphname="Current Loop" axistype=grid
++ axisname=bodemag order=0  useNameAsTitle=true  userid=Probe1$GAIN. MeasureSpec="Gain\sCrossover\sFrequency\s(dB\sPlot)|0|0|0|0!Gain\sMargin\s(dB\sPlot)|0|0|0|0"
+.post_process probe_measure Probe1$GAIN. Gain\sCrossover\sFrequency\s(dB\sPlot)|0|0|0|0!Gain\sMargin\s(dB\sPlot)|0|0|0|0
+.GRAPH "ph(:#IOUT/:#VCTRL)" Curvelabel="Gid Phase" nowarn=true yunit="degrees" complete=True
++ analysis="ac" ylog=lin xlog=auto  ydelta=45 persistence=-1 colourname=Probe1_bode_color
++  graphname="Current Loop"  axisname=bodephase order=1  useNameAsTitle=true  userid=Probe1$PHASE.
++ MeasureSpec="Phase\sMargin\s(Phase\sPlot)|0|0|0|0"
+.post_process probe_measure Probe1$PHASE. Phase\sMargin\s(Phase\sPlot)|0|0|0|0
+.PRINT V(32)
+.GRAPH :32 axisType="auto" persistence=-1 graphName="Ind" curveLabel="SW_PRI" analysis="tran|pop"
++ xLog="auto" yLog="auto"  nowarn=true GUID="ccff3d0d-0fe3-4b7a-baea-4f9f838963e3"
++ disabled=false PROBEREF=Probe10  
+.PRINT V(#PWM)
+.GRAPH :#PWM axisType="grid" axisName="BUCK_PWM_H" persistence=-1 curveLabel="PWM"
++ analysis="tran|pop" xLog="auto" yLog="auto"  nowarn=true GUID="49c26e97-a00b-4cd1-9ad3-99104718631d"
++ disabled=false PROBEREF=Probe2  
+E$Probe5$TP_DIFFPRB 55 0 28 29 1 
+.PRINT V(55)
+.graph :55 axisType="auto" persistence=-1 graphName="Ind" curveLabel="VCAP" analysis="tran|pop"
++ xLog="auto" yLog="auto"  nowarn=true GUID="30ba8569-2e43-487d-8c2f-3426bfb263f8"
++ disabled=false 
+.PRINT V(35)
+.GRAPH :35 axisType="auto" persistence=-1 graphName="Ind" curveLabel="SW_SEC" analysis="tran|pop"
++ xLog="auto" yLog="auto"  nowarn=true GUID="c7210604-23be-4c1a-bb4b-dccc57026153"
++ disabled=false PROBEREF=Probe6  
+.PRINT V(#VOUT)
+.GRAPH :#VOUT axisType="owngrid" persistence=-1 graphName="Out" curveLabel="VOUT"
++ analysis="tran|pop" xLog="auto" yLog="auto"  nowarn=true GUID="bba3196e-40ce-4b43-82fb-1038d664dd0c"
++ disabled=false PROBEREF=Probe8  
+.PRINT V(#VOUT)
+.PRINT V(#VCTRL)
+.GRAPH "db(:#VOUT/:#VCTRL)" GUID="cf13a515-5a88-4c72-84e5-39932f7c81cb" Curvelabel="Gvd
++ Gain" nowarn=true yunit="dB" complete=True analysis="ac" ylog=lin xlog=auto  ydelta=20
++ persistence=-1 colourname=Probe9_bode_color  graphname="Current Loop" axistype=grid
++ axisname=bodemag order=0  useNameAsTitle=true  userid=Probe9$GAIN. MeasureSpec="Gain\sCrossover\sFrequency\s(dB\sPlot)|0|0|0|0!Gain\sMargin\s(dB\sPlot)|0|0|0|0"
+.post_process probe_measure Probe9$GAIN. Gain\sCrossover\sFrequency\s(dB\sPlot)|0|0|0|0!Gain\sMargin\s(dB\sPlot)|0|0|0|0
+.GRAPH "ph(:#VOUT/:#VCTRL)" Curvelabel="Gvd Phase" nowarn=true yunit="degrees" complete=True
++ analysis="ac" ylog=lin xlog=auto  ydelta=45 persistence=-1 colourname=Probe9_bode_color
++  graphname="Current Loop"  axisname=bodephase order=1  useNameAsTitle=true  userid=Probe9$PHASE.
++ MeasureSpec="Phase\sMargin\s(Phase\sPlot)|0|0|0|0"
+.post_process probe_measure Probe9$PHASE. Phase\sMargin\s(Phase\sPlot)|0|0|0|0
+R1 44 45 40
+R15 45 0 100m
+R19 31 27 116m
+R2 30 28 2m
+R20 34 29 116m
+R5 43 0 200m
+R_LDCR_FILTER 42 41 20m
+X$S5 27 37 52 0 SIMPLIS_VC_SWITCH$9
+!T$TX1 N_WIND=2 38 32 N1=1 0 33 N2=1
+L$TX1 38 32 22u
+X$U1 52 46 49 Complemetary_PWM$10
+V1 49 47 AC 10m 0
+V2 45 53 AC 1 0
+V_BUCK_DUTY 47 0 0.576315789473684
+VIN1 40 0 18
+X1 52 48 PERIODIC_OP$11
+.subckt PERIODIC_OP$11  1 3
+.NODE_MAP IN 1
+.NODE_MAP OUT 3
+!D_CYCLE 3 0 1 302 M1M IC=0
+VREF 302 0 DC 2.5
+.MODEL M1M COMP RIN=10MEG ROUT=50 VOL=0 VOH=5  HYSTWD=0.002 DELAY=0
+.ends PERIODIC_OP$11
+
+?@@--START ENCRYPTION: "Complemetary_PWM"
+?@@w8Mramo3Am+ZLK1m6t9rl52ORS5SSp1B7D3x7ljoIJxsZ34XXZiCnINGvdn/WjNEDSyw?##
+?@@8EaG8eQM4oeKV7NGymAfRhxhHd+s+8iKtPKRu6gQdXQdRd9Qw4FDi/WRNNPRWrafljiU?##
+?@@uW1m94Fv7/vkX5XAu9dbt3NtvX8lPeGU8Qmy3fEYmzNhw2gn8SsBvBSLv75ek8ET0rhF?##
+?@@tlRL8D7ENBNFX28U4GmsCvNIt9QCtKaLnRY1GkBiOSrSGvBoSwcsF9ss7ExwS55MAlSb?##
+?@@001186ZWsVQKOuuCrnlgi36vYW7jO8qEwT5MIURtyhuLm97tgRNg1QbcVv850zfsZFOa?##
+?@@vIe+Auxq1rUE+prsxb5sM7uKQPosw3EpWUVboWh/x3eZyg9BpK3ArIFsNgt/JJM+qfGD?##
+?@@ab2NW6355AsGDxfNahny/nB7aN0Fdb4YWx4YGbsKUHBybVEST5zmU625VoJr5J55bxDo?##
+?@@MuVzXxShJOEw/ShNja6RtesZ6ZRxhaxDJ85OMcNR8HydLJpIVgOiK20rTOd2TNMrE7IA?##
+?@@I2RVMQ7ctZfMnC9QjX2QgyhyTIJKcfSFVyu4LlOgeASmmGEB1JcqQDPkp0z1qIrHbePc?##
+?@@PDsy0z3XkrHhmizT4LnFLMLdjDEuWcsFcRR2L/+h5eTezg5ZMOSbs27uprKxY97A/95R?##
+?@@Nf6taFJfXC1175rBnYDAAZMdnskm1eL4q0WcD/Q4nkm+KnDDVWiL3nZCIG3/4qMH3+M0?##
+?@@TtWKCSLmEHxn7FjdsmOOm5+3pmfpxbUrHmB3izDJRjxCZlAtzXFiWdHDGYRAvJ05YUTq?##
+?@@u3+rqucbiKMMrMExeqMG5zWqEFn9C8DLgl6WHiJa4OA0KTVhE9F81ua3r4rPbS7zt4EA?##
+?@@aLV6A4/pPyKTh6PvhjiW7dOMkb386j4xslsYfTcumBTXpb2082EqG7iP5+YlmY6HI5cL?##
+?@@yfe2f6Y5q70MXmQ66GkwCD6GXgfPipQAfTWaeVlwnrWaH/EA9UN/BAwQva4TQdwpSCka?##
+?@@quxmy5SvEFgSbISns10Xdr8Kou2JEVudfKCN1ruzXcbVFg4LjE/jpsTcwjjNDmOFLU17?##
+?@@K6ju9LpFak86Ay04PTn9FG/Gv4xILOKJOaqpQDjwUr0OQyEM9WKjw54eaw8oFx6GaqJW?##
+?@@WCtJfQW4fSWsSGBvCPFs2vi/rnP84nV7zlFY7ploi3L1jXKKTt7WJsE4oqwddKM/jT2m?##
+?@@zRkC4L67iK6VCAqg2lIeUx5vWtUhExBkb7cIS90FUq0V+gtkwjsDQWEAfhmzyOpa/fHX?##
+?@@psoaame21LjNdKYBRUMJX673+bOWG+J54wn9FuXtP0B4yfWR1g5jhX4N7iL8Y2qvGjgq?##
+?@@v6H3C2gsJbmSe8WePTUAPHBc1V0hmPy6M6T4IIWQqA2mHe+jlgeL6k+9MavLPG7AAIZd?##
+?@@sCDZ3lxB06P0TDwTfQBRDug8ZLBtNoitz4rLg7UrnAcVFnEHdPcsTXnIa6mM25e06rwj?##
+?@@AT/MdaFmCyNSJFqqe7+S/0ON8g3DuIlA4E5cqqTzOAJ6UkcMyHZs6+W3qGeP9iqb7b0X?##
+?@@itkDwGLNuSNljTflxjY1prRlNIz+6E8sHok8DzOnljdSyVFnqRZVJMSSd73+KAB31hzJ?##
+?@@szoS57TxumHM1CQHE91lvdAW5Rnsoi93Duilqto5J3L+bQrpF24wlS/r/yMu83KXehog?##
+?@@ZJIuoq2jcqwAf2dMPicys1LYYCEaxabwG+fK/3Ex7tcg/SskQt3X8kLyKw73+hKeTBTZ?##
+?@@fWkLQxRxH+1XOj+/xjuAVQVCg3tEaljMAMQblRw9RgeNKl8FDSBGzQ2805fxTeDWTTAZ?##
+?@@YoEI8azSrS0CIJcvhonGKRlvCsf5qB6vesQ/F61wp/EQcsQ2RYaewyAQoAwTnry0B5ON?##
+?@@L8s6Vh1LKBNdJ0iqc0HcWN6RF0YdkBQYBcodxgMg5rEEtwKYfDDNBVeCw2EMYGzmVIn/?##
+?@@XE6V37zAPIuDg7JrsuUDsN3Zu2s9KjfCiXYSUV5p/NmVkEZPjPxDxjvjJQdU+hl+r29Z?##
+?@@gYxYpHf2gcorseSFhBe7YBzHCY7SzhYAecobJZw/KQXIZ+ZmQFs3cSOd2Nccv+pl72Ba?##
+?@@7jV5RKBdBZmmmU/ex1xGhskMAqvffsJqNTw0VBVtvYJvNlwP2uweUM2eW+R/ILFat2/U?##
+?@@T96dYgx963qmORo+7khEJyHW4ecYtXHRFPy12xWnWwkApWSmU490rpUeiurIM0tQ4fqj?##
+?@@OBjmcUnoBKNT1LDUQ74HikfOqMIF+JJmIWL61QbhRZuQbjCpn3eFuSj+QD8rWhFcgXED?##
+?@@ZZtB+iv3Bs1IrLbpR2SE5V5lERJmeof//YmUZX7T82d0gw2DWB28B01l6ZD7CYhZIsd/?##
+?@@fnIem5uPHfG3a2Yp7TTv3FSsZTcnx6+cQUBs5bSkqvl1A+STeEVVp+8j/WO1RGU9teas?##
+?@@S7tRAIMhoVEbV0herJTB3WJniTyEscA+MfQOCY5LTFd0iwkRo/wKpbbgkokU/ptTP26x?##
+?@@vIe+Atnpc9HvgpBdAet3TPDEtb8Cb/Q6wUb1LO1abizZAWqo4uSUSl/rhL8lXq3AvWhD?##
+?@@rQag1Ps5o2i8P6NwM+gzlxvbahdaq14lb9ff1QQysJMuRLbVdAayXXwVc69KViQxJY+A?##
+?@@fnIem5O2ciU57ISePvNVoxhhBfwNKylqFTfxjBl5VmN/elptc20ErZK66j94H96AwU2c?##
+?@@t1xeSHqnK4e5NMx5Pdi2RmQJna5RMhr4e3MpIgsXlfXeHvQPJ2dO6vlC9LWGEoLT2Flv?##
+?@@aLV6Ax/DW8cGQO9PuGqRg0aFViptsOiFO+bkeyO3fxmiHzc+NdyuOe+koOw9Umx5AWqe?##
+?@@XVaoN+9JnzjWJchpyUfosMVKUOpHv+mOyms80d22svWVce1wper3DjNX7CruQS+vA9Mb?##
+?@@fnIemwMUfllKW++/eiyncEOCyOJzA9jpb++SgLp0ZBPUHmpGKonZDZQhp2SJVX+Mze/i?##
+?@@q/V5JN/JX8bypFlN9mZD5bTJ/+O46HwtlzPX8ULoTcQsWq+XAw2LFWuqxor8FbjG89fK?##
+?@@rP6MfL4IeEas7caoVDUw7SClDCOQn/6KMIH6CW7qB/EYc4RGH5G4PB4eih58oyBTCicO?##
+?@@OSH5yk9AL9jc3ECEQcwaEP/eiWUx4p1EEAypYH2RQ1JEnSzmMykpH2Ayuw7DDlvNtNSC?##
+?@@ZqRUUtRD641VelEzA7z5q58K37bVs6C5WyuQqiV2zD7jUVqYx2SHnAx33JVfYCy7df1a?##
+?@@kyev2+33mfTEKXaW/vqUsQr4mJTuV0+BDj2AQOK8AQ1a8EZRN+iLGTqHhEPf+/LKkBM4?##
+?@@SKIX9+J7oFt9oZ37rYEirvFd9vtnjwadmwDpAa5/3/gfibyz9IuUSAgX0HKPQ8yqP37p?##
+?@@+ZRLEVe+xJKgY01bHZIGVNoB9PipjXlWl7ETD9NmbQFtzWBaIvsKcOPrOASp0ZWfVhU1?##
+?@@1meu/EGwUW2gs+cp0ddFmD7YaBskdJWqQnliC19pYy/SOYPsN4LrpQN2JEptumId0FG8?##
+?@@m2tInpIVvhaKoPRcWcODfw5Et3EPXgQGQJF4CroB1D9S/2AvzfRJbY5i5qH9tqIZJoIz?##
+?@@8Eaf9QJaZB29rwet3rw06mFLPlR6qWz7dvubloWT6eX7/8hrF8bnxM/qpNmKa13PWi0w?##
+?@@nX1uT3aY5TDKFrEEtanEU/x0uFaAuPSH23vBIpUY2rIZOsGntB3x78M3VNcuDT+YE6Pt?##
+?@@kh6cg8ePGeQo6st8Hgx3Ju6fpMniA5qeBvGz71PJrsAG1sNUz1Hd47Jj0GwlSKrneLsb?##
+?@@D7jXSsAC6IQg5+xPWovTPxPWPB8PuMlU7UPJARqMmDDTim02qkTIfvzOSr82arrWabZL?##
+?@@rP6MfHzVKVD8BRwEeX+/qQqMAzXDeOKf3s13o/FVZtGt97LnxYnSZlp19MsjT2gm5w1B?##
+?@@VREQdFhk7NrapnT70GifVaIti27i39IKQEH3/9J4rKnEpPOaIn227aiJ0JcH6eaygoci?##
+?@@GhapFiuwx4LneJ1uxfpYJxHmi2IiR5oCXNUufR+Bkdu6phdeLKep0CjXkIpRcvlMzxA/?##
+?@@K6ju9FdX/3aObMGaUGvx9fH6yctEpiQ6WZKq5eiTAqojWpU1yo3okmP/UUmaiXPPu/qR?##
+?@@qNtAG3qaz5W6x9FM5tS2rmr5gKZSoUhhkHKwgDhEnE362thZOF5UFSYKER0WcQ1E6k1w?##
+?@@OSH5yhp9heE0i43uUnDt0oR7NveejqBkyEJH3PrykNCUwloQ++AUtGQnzMVhgGSSRZYP?##
+?@@Qm6l5fEKaOJa3l4u06C0UzIM7m+FjTSVJ76QGZME5EvR3vVccHRncQuRj+7r8aAM7W8b?##
+?@@szoS55fz+K9r50dMrhfyApM1jplfZbjrzTKO8g7u6g0MFwysfj5kS5g/Rx18wThetF09?##
+?@@lC/CMxbyaYhCw/KolYae426jGJorDtK1Fn60eWnekM3rKSk9IzwC/Vi88nYOligE9N5N?##
+?@@tUs4l1wUXR+4BHK5yF07tMciOFV7iAZpdLmmVz5BOcWIcLPkWoEAQoaoHQrgL2lfuutu?##
+?@@AkjfzYQOgsNAnN9THM4R1O0tYk0PaOtPLcXCtPY4YMtzZKxFsEvEFYcMfJvQo+aI8LHz?##
+?@@7z6MnZiISxwUjSXp0t7NLse4wtkHJ3NvUA+wC3FkcFScnGzyE7941kkxwyy/lMu2j6rE?##
+?@@SKIX9zsdoH1t7B0dOnD0ZxbsAySJrk5HUhlpZFSOxl8M1p6CN9YrrOJOWdWTYZvjOErG?##
+?@@kRWJKn+8q96ca3u6Qre1t/f16SykWCFExn9VntBrTsQsruIbQ5JSEuQXYyiJG3qjr+Z1?##
+?@@cgs5dzDzBe3RrM31aNmRnjW29EfZ1WWDylbtq/PxwmoZTh1zeChKaSPFdpZElENzdnJP?##
+?@@6xs/O9PcTlfCKvtdJCcdTkF/xStaYOsg+hc88Qu8jUDNR/vKDzkD5WILIE03r9sbmf3l?##
+?@@UOawujSX9DB8euefEKXQgVWWjls7hoj85z8YLPF4M5M9+DMUlsziST6IwDJVYQvjiF9O?##
+?@@4cWAyMd1+7BPIo3MXppRqRrWNWwJC0hRvv2FoboVAHrRCC5BlxcW7bw006TawPE3PiOl?##
+?@@mmM1RYMxcxr7EkRs0ZRHFIKLcim6iGgRvoIPz4S6SwRatvuUBXpjEj2pGrlR6xHJ+/WV?##
+?@@n46U/0dVFa9VxyOMoAbDskiAfEb29ZJdm/WEshDKN0K56rBiOUqy3N09ky+AgnduBAsF?##
+?@@yO6jJjOEdGMxRMrLMjZ2LqONALpIUAfZ1f81VuOHFems0FydHbVYeV3zpi5ksVAjeiRN?##
+?@@4cWAyP1lSfMu+zqpBmDRGECtsyf9BZt66IGPtmIX14/UD89KUvXXYwLIRSBozFK+RRoA?##
+?@@psoaag7ZR+GjFM1iDiDpHmwu6ge2i1DEuopHpjHRz6Fswb9uSUQCdLR09nKT90NrCXow?##
+?@@h7/KtoT/NmaWOy2/26kxbXrX4uFRowy8SoA++lb+Q1VBBMUbsLcvsl9UlwaJonhwl7UT?##
+?@@hKaRrSkHOj0s1CqfU377YuXbUic7I2wk8kFoqBGOCF0BtM/8p1AirwFZBEWL6hLedGI+?##
+?@@jfM9yTHU5rbqaPK0Tl2VTd2er76HUjDH0r+rWTgiyI+YHPd7N6VkATkpNgo87KlHs/rO?##
+?@@quxmy1MeVGyOGen7gDE3aZOp0B55CPLcT9fjrTNPQRdXYgC9TKaXU0JccSlbVyUwTUC1?##
+?@@q/V5JBTzlosWwXiPsCZEwwqtMuXUYrcP3x86DGk6vfQf85nEnN9jo73MDFosKaJqGm3K?##
+?@@fGH46oGeJyeJpJAQxPYtFdyafzqbmEhgnyZwfrFPJNufkgxJDBnaWd8wOFvsjtxPd8bb?##
+?@@kRWJKkzXctj/9YagVbS6tFnKbn9L7uTIzRpkEPABsezUw5gdfpB+Kz/ZZ4yQdIi0QKg3?##
+?@@GhapFlGinNykBR7vWAeVyaQBTdofzU/zXPzKV2N8jtynTY6ghof330I7vaM2S+YfaasJ?##
+?@@001181xuHuP6YYC1j1dyLcsrBSiqyHVmiWiVAcR4OHNZDnVdCVj93G55sCC4e26JBJWP?##
+?@@yO6jJnLlVq8D3rh7ISTVScamKfTj/4LWspHSUMa/CdxLYTjozrNsobB7Eun/0CrTHoY1?##
+?@@+ZRLEcLb0NlGmpizvSc6MN28z3smfcctf1lKPbHM/fbaI/JOyI9YtvTPcrnzivlA/kg7?##
+?@@Hjn1eFoJd8TvR5BGlSIeJfA2QUW2YySWtaeiEoTV1NQxQTVJWfAZOiKDpTlw3QdzYajC?##
+?@@E9ojrBahYcQnSSgQiWf2aiNITwgbD+k0WLGK10QH0WhqxcEn/SO7f9jhFA7SJmRxf5Xy?##
+?@@cPoTxuaihOf6xFu/UHMTQyMon6QTaYKmSPu2qFcIU4GTK7jhV4tdYq01LqpjsagAx6Y2?##
+?@@IVIvgU1Mk/OCTqmEUv4amvma1DkRaYUfZ0aErCfN08HcsMWiVLMDxKQWJEnESalemKg6?##
+?@@mmM1RWWMU1ss/3dC3hoAH3TvenQ2SE0GNUYPy4pUh6B9UwyzRbuVuF8rmEBL7KIxPv4S?##
+?@@Q3e4PY7XDwOKfGEcMtUy0Qw+8zjTOd1MWM67U20kWo9WfFeosMsbrGV4QvNCFc2esW+X?##
+?@@BFkFfklle+gvthOSg534oW1vNS3QX/shW9/IrK2Qc0KiFtdGiA8nnLDeNt55hEYZLBJv?##
+?@@IVIXgfcCv04h0RNWhX6c18A5PiArl6k20RdZ2mzy7PgkSFWwhRwvP+k8DlNvjfZiVWmw?##
+?@@--END ENCRYPTION: "Complemetary_PWM", 101 lines
+.subckt SIMPLIS_VC_SWITCH$9  1 2 3 4
+.NODE_MAP P 1
+.NODE_MAP N 2
+.NODE_MAP CP 3
+.NODE_MAP CN 4
+S1 1 2 3 4 SW IC=OPEN
+.MODEL SW VCSW ROFF=1000000 RON=0.031 TH=2 HYSTWD=0.1 LOGIC=POS
+.ends SIMPLIS_VC_SWITCH$9
+
+.subckt H3$TP_CCVS$8  1 2 3 4
+.node_map P 1
+.node_map N 2
+.node_map CP 3
+.node_map CN 4
+H1 1 2 V1 1
+V1 3 4 0
+.ends H3$TP_CCVS$8
+
+.subckt SCHOTTKY_DIODE_SPICE_V3$7  1 2
+.NODE_MAP P 1
+.NODE_MAP N 2
+X_DEBUG 1 2 DIODE_SPICE_DEBUG_V3$21
+X_BASE 1 2 DIODE_SPICE_BASE_V3$22
+?@@--START ENCRYPTION: "DIODE_SPICE_BASE_V3"
+?@@mmMcQk6E+N2GhOg46CxlfkH1W2xp0rpaK3w4KP6tme7zY7+kIQ1abHCu3oM5EN6WnBxe?##
+?@@i+L9FLl/bNo8jMh873wdn4Jr7tQGiZGFQtJZj+T10lBjb588/2oZHUqVYdpIZrPNxG69?##
+?@@bNeoYvYGpViuPDCbnaAkfMgJRgdlYstbkw/f2vGK0Av1D/a6MExyzae3gJ8j49BQjtLW?##
+?@@nX1uT674hNinN+uMl5gohIgGL3pJLnO+bo0pBQGjEDYGQk+0JYo2Sh5V7mF4xVUlnhEc?##
+?@@3qtHvy4GOG5ht+t6VVSZikwCZ7R1Uzue9zi5cfNldmH/OxkGlMtmaAw4TDkqj8+kwXFI?##
+?@@a8+0DDJxWeDG9MfMq4cHJ8yHzkO5FYFXRWVFc/vUZ8gZytobfn0mcabLiAHySXpnlAd4?##
+?@@rP6MfPXRdLMxuWpF3a1aTr8YcIeK+FAn95Tgj7oQlrKJ/LT+jkLgUXi5w4fPj+svGk4a?##
+?@@JXV74mfKCCHVIUm5Mzd/kt8ngMnbv74S7SAcEsZRMc2ppEQbRzEFB3m1xnM/93pNvGLz?##
+?@@GhabFqGBF4pN+ZJMrnobQZ8zY7+EVq6GsF+GKIXnsC2Q44fi0jcib4KGw/SYTyb0q7Ex?##
+?@@--END ENCRYPTION: "DIODE_SPICE_BASE_V3", 11 lines
+.subckt DIODE_SPICE_DEBUG_V3$21  1 2
+.ends DIODE_SPICE_DEBUG_V3$21
+
+.ends SCHOTTKY_DIODE_SPICE_V3$7
+
+.subckt MULTI_LEVEL_CAP_QTY$6  1 9
+.NODE_MAP P 1
+.NODE_MAP N 9
+CAP 1 2 2e-07
++ IC=20
+RLK 1 2 1000000
+RESR 2 9 0.003
+.ends MULTI_LEVEL_CAP_QTY$6
+
+.subckt MULTI_LEVEL_CAP_QTY$5  1 9
+.NODE_MAP P 1
+.NODE_MAP N 9
+CAP 1 2 5e-06
++ IC=20
+RLK 1 2 1000000
+RESR 2 9 0.003
+.ends MULTI_LEVEL_CAP_QTY$5
+
+.subckt WEBSIM_ECAP1$4  101 109
+.NODE_MAP P 101
+.NODE_MAP N 109
+CC   101 102 3.3e-05 IC=20
+RESR 102 109 0.68
+F_QUANTITY  101 109 RESR 1
+F_MINUS_ONE 109 101 RESR 1.0
+.ends WEBSIM_ECAP1$4
+
+.subckt WEBSIM_ECAP1$3  101 109
+.NODE_MAP P 101
+.NODE_MAP N 109
+CC   101 102 5e-07 IC=18
+RESR 102 109 0.002
+F_QUANTITY  101 109 RESR 1
+F_MINUS_ONE 109 101 RESR 1.0
+.ends WEBSIM_ECAP1$3
+
+.subckt WEBSIM_ECAP1$2  101 109
+.NODE_MAP P 101
+.NODE_MAP N 109
+CC   101 102 1e-05 IC=20
+RESR 102 109 0.005
+F_QUANTITY  101 109 RESR 2
+F_MINUS_ONE 109 101 RESR 1.0
+.ends WEBSIM_ECAP1$2
+
+.subckt WEBSIM_ECAP1$1  101 109
+.NODE_MAP P 101
+.NODE_MAP N 109
+CC   101 102 5e-06 IC=18
+RESR 102 109 0.002
+F_QUANTITY  101 109 RESR 2
+F_MINUS_ONE 109 101 RESR 1.0
+.ends WEBSIM_ECAP1$1
+
+.end
+
