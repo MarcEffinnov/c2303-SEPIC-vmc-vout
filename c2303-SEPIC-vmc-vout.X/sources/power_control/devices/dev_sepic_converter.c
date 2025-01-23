@@ -169,7 +169,8 @@ volatile uint16_t dev_csepicConverter_Execute(volatile CSEPIC_CONVERTER_t *csepi
         case CSEPIC_OPSRET_COMPLETE:
             
             // Increment main operating state pointer by one tick
-            csepicInstance->state_id.value = (uint32_t)(csepicInstance->state_id.bits.opstate_id++);
+            csepicInstance->state_id.bits.opstate_id++;
+            csepicInstance->state_id.value = (uint32_t)(csepicInstance->state_id.bits.opstate_id);
             
             // Check if new index is out of range, reset to RESET if so
             if (csepicInstance->state_id.bits.opstate_id >= csepicStateList_size)
